@@ -1,17 +1,22 @@
-FROM nginx:alpine
+# Stage 1: Build stage
+FROM node:20 AS build
 
-# Copy HTML files to nginx document root
-COPY index.html /usr/share/nginx/html/
-COPY about.html /usr/share/nginx/html/
-COPY services.html /usr/share/nginx/html/
-COPY contact.html /usr/share/nginx/html/
-COPY styles.css /usr/share/nginx/html/
+WORKDIR /app
+COPY package*.json ./
+RUN npm install
+COPY . .
+RUN npm run build   # creates /app/build
 
-# Copy custom nginx configuration
-COPY nginx.conf /etc/nginx/nginx.conf
+# Stage 2: Production stage
+FROM node:20-slim
 
-# Expose port 80
+WORKDIR /app
+
+# Install a lightweight static server
+RUN npm install -g serve
+
+# Copy only the production build from Stage 1
+COPY --from=build /app/build ./build
+
 EXPOSE 80
-
-# Start nginx
-CMD ["nginx", "-g", "daemon off;"]
+CMD ["serve", "-s", "build", "-l", "80"]
