@@ -5,7 +5,7 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm install
 COPY . .
-RUN npm run build   # creates /app/build
+# RUN npm run build   # creates /app/build
 
 # Stage 2: Production stage
 FROM node:20-slim
@@ -16,7 +16,7 @@ WORKDIR /app
 RUN npm install -g serve
 
 # Copy only the production build from Stage 1
-COPY --from=build /app/build ./build
+# COPY --from=build /app/build ./build
 
 EXPOSE 80
-CMD ["serve", "-s", "build", "-l", "80"]
+CMD ["npm", "start"]
