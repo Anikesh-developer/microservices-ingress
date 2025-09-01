@@ -2,18 +2,25 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_HUB_REPO = 'kastrov/techsolutions-app'
-        K8S_CLUSTER_NAME = 'kastro-cluster'
-        AWS_REGION = 'us-east-1'
+        DOCKER_HUB_REPO = 'anikesh372/microservice'
+        K8S_CLUSTER_NAME = 'microservice-cluster'
+        AWS_REGION = 'eu-north-1'
         NAMESPACE = 'default'
-        APP_NAME = 'techsolutions'
+        APP_NAME = 'microservice'
     }
 
     stages {
         stage('Checkout') {
             steps {
                 echo 'Checking out source code...'
-                git 'https://github.com/KastroVKiran/microservices-ingress.git'
+                git 'https://github.com/Anikesh-developer/microservices-ingress.git'
+            }
+        }
+
+        stage('Install NPM Packages') {
+            steps {
+                sh 'npm install'
+                
             }
         }
 
@@ -37,7 +44,7 @@ pipeline {
             steps {
                 echo 'Pushing Docker image to DockerHub...'
                 script {
-                    withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME')]) {
+                    withCredentials([usernamePassword(credentialsId: 'anikesh372', passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME')]) {
                         sh "echo \${DOCKER_PASSWORD} | docker login -u \${DOCKER_USERNAME} --password-stdin"
                         sh "docker push ${DOCKER_HUB_REPO}:${env.IMAGE_TAG}"
                         sh "docker push ${DOCKER_HUB_REPO}:latest"
@@ -50,7 +57,7 @@ pipeline {
             steps {
                 echo 'Configuring AWS CLI and kubectl...'
                 script {
-                    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-creds']]) {
+                    withCredentials([aws(accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'Aws-creds', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY')]) {
                         sh "aws configure set region ${AWS_REGION}"
                         sh "aws eks update-kubeconfig --region ${AWS_REGION} --name ${K8S_CLUSTER_NAME}"
                         sh "kubectl config current-context"
@@ -64,12 +71,20 @@ pipeline {
             steps {
                 echo 'Deploying application to Kubernetes...'
                 script {
-                    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-creds']]) {
-                        sh "sed -i 's|kastrov/techsolutions-app:latest|kastrov/techsolutions-app:${env.IMAGE_TAG}|g' k8s/deployment.yaml"
+                    withCredentials([aws(accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'Aws-creds', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY')]) {
+                        sh "sed -i 's|anikesh372/microservice:latest|anikesh372/microservice:${env.IMAGE_TAG}|g' k8s/deployment.yaml"
                         sh "kubectl apply -f k8s/deployment.yaml"
-                        sh "kubectl rollout status deployment/${APP_NAME}-deployment --timeout=300s"
-                        sh "kubectl get pods -l app=${APP_NAME}"
-                        sh "kubectl get svc ${APP_NAME}-service"
+                    }
+                }
+            }
+        }
+
+        stage('Deploy Service') {
+            steps {
+                echo 'Deploying Service resource...'
+                script {
+                    withCredentials([aws(accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'Aws-creds', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY')]) {
+                        sh "kubectl apply -f k8s/service.yaml"
                     }
                 }
             }
@@ -79,11 +94,8 @@ pipeline {
             steps {
                 echo 'Deploying Ingress resource...'
                 script {
-                    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-creds']]) {
+                    withCredentials([aws(accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'Aws-creds', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY')]) {
                         sh "kubectl apply -f k8s/ingress.yaml"
-                        sleep(10)
-                        sh "kubectl get ingress ${APP_NAME}-ingress"
-                        sh "kubectl describe ingress ${APP_NAME}-ingress"
                     }
                 }
             }
@@ -93,7 +105,7 @@ pipeline {
             steps {
                 echo 'Getting Ingress URL...'
                 script {
-                    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-creds']]) {
+                    withCredentials([aws(accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'Aws-creds', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY')]) {
                         timeout(time: 10, unit: 'MINUTES') {
                             waitUntil {
                                 script {
