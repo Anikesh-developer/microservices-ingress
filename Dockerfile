@@ -15,4 +15,4 @@ WORKDIR /app
 COPY --from=build /app . 
 
 EXPOSE 80
-CMD ["npm", "start"]
+CMD ["node", "index.js"]
