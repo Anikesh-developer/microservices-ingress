@@ -11,4 +11,4 @@ spec:
   - name: microservice
     protocol: TCP
     port: 80
-    targetPort: 80
+    targetPort: 3000
