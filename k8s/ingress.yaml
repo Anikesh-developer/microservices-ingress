@@ -13,6 +13,6 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: microservice-services
+                name: microservice-services  # ✅ must match your Service name
                 port:
                   number: 80
