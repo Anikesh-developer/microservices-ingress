@@ -30,5 +30,5 @@ spec:
             cpu: 100m
             memory: 100Mi
         ports:
-        - containerPort:  3000
+        - containerPort:  80
           name: microservice
