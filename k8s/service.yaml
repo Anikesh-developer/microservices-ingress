@@ -10,5 +10,5 @@ spec:
   ports:
   - name: microservice
     protocol: TCP
-    port: 80
-    targetPort: 3000
+    port: 80   # Service port
+    targetPort: 80   # Container port exposed in Dockerfile
