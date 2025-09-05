@@ -16,7 +16,9 @@ WORKDIR /app
 RUN npm install -g serve
 
 # Copy only the production build from Stage 1
-# COPY --from=build /app/build ./build
+COPY --from=build /app/package*.json ./
+COPY --from=build /app/node_modules ./node_modules
+COPY --from=build /app . 
 
 EXPOSE 80
 CMD ["npm", "start"]
